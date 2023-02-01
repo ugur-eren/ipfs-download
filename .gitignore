@@ -138,3 +138,7 @@ dist
 # Build
 dist
 build
+
+# Downloaded files
+ipfs/**/*
+!ipfs/.gitkeep
