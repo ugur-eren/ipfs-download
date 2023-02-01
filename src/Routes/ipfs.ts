@@ -23,6 +23,10 @@ Router.get('/:hash', async (req, res) => {
   }
 
   res.status(HTTPStatus.OK);
+
+  // Cache for 30 days
+  res.header('cache-control', `max-age=${60 * 60 * 24 * 30}`);
+
   createReadStream(join(IPFS_FOLDER, hash)).pipe(res);
 });
 
