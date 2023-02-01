@@ -4,6 +4,7 @@ import express from 'express';
 import HTTPStatus from '../Utils/HTTPStatus';
 import {IPFS_FOLDER} from '../Utils/Constants';
 import {FileDownloader, FileExists} from '../Utils/Helpers';
+import IpfsState from '../Utils/IpfsState';
 
 const Router = express.Router();
 
@@ -20,9 +21,20 @@ Router.get('/:hash', async (req, res) => {
       res.status(HTTPStatus.NotFound).send();
       return;
     }
+
+    const contentType = response.response.headers.get('content-type');
+    if (contentType) {
+      IpfsState.set(hash, contentType);
+    }
   }
 
   res.status(HTTPStatus.OK);
+
+  // Set content-type if available
+  const contentType = IpfsState.get(hash);
+  if (contentType) {
+    res.header('content-type', contentType);
+  }
 
   // Cache for 30 days
   res.header('cache-control', `max-age=${60 * 60 * 24 * 30}`);

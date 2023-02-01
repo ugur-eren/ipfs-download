@@ -1,6 +1,6 @@
 import {createWriteStream} from 'node:fs';
 import fs from 'node:fs/promises';
-import fetch from 'node-fetch';
+import fetch, {Response} from 'node-fetch';
 
 export const GetPostgresTimestamp = (date: Date = new Date()): string => {
   /**
@@ -28,6 +28,7 @@ export const FileDownloader = async (
 ): Promise<
   | {
       ok: true;
+      response: Response;
     }
   | {
       ok: false;
@@ -49,7 +50,7 @@ export const FileDownloader = async (
       });
 
       writeStream.on('finish', () => {
-        resolve({ok: true});
+        resolve({ok: true, response});
       });
     });
   });
