@@ -22,12 +22,15 @@ const PORT = process.env.PORT || 3002;
 app.listen(PORT, async () => {
   const contentTypesPath = join(IPFS_FOLDER, 'ContentTypes.json');
 
+  // Create ContentTypes.json if it doesn't exist
   if (!(await FileExists(contentTypesPath))) {
     await fs.writeFile(contentTypesPath, '{}', 'utf-8');
   }
 
+  // Initialize IpfsState with the ContentTypes.json file contents
   IpfsState.initialize(JSON.parse(await fs.readFile(contentTypesPath, 'utf-8')));
 
+  // Subscribe to IpfsState changes and write the new state to ContentTypes.json
   IpfsState.subscribe(async () => {
     await fs.writeFile(contentTypesPath, JSON.stringify(IpfsState.state), 'utf-8');
   });

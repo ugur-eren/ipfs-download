@@ -2,7 +2,7 @@ import {join} from 'node:path';
 import {createReadStream} from 'node:fs';
 import express from 'express';
 import HTTPStatus from '../Utils/HTTPStatus';
-import {IPFS_FOLDER} from '../Utils/Constants';
+import {IPFS_API_URL, IPFS_FOLDER} from '../Utils/Constants';
 import {FileDownloader, FileExists} from '../Utils/Helpers';
 import IpfsState from '../Utils/IpfsState';
 
@@ -11,9 +11,10 @@ const Router = express.Router();
 Router.get('/:hash', async (req, res) => {
   const {hash} = req.params;
 
+  // Download the file if it doesn't exist
   if (!(await FileExists(join(IPFS_FOLDER, hash)))) {
     const response = await FileDownloader(
-      `https://cloudflare-ipfs.com/ipfs/${hash}`,
+      IPFS_API_URL.replace('{hash}', hash),
       join(IPFS_FOLDER, hash),
     );
 
@@ -22,6 +23,7 @@ Router.get('/:hash', async (req, res) => {
       return;
     }
 
+    // Set content-type to the IPFS state if available
     const contentType = response.response.headers.get('content-type');
     if (contentType) {
       IpfsState.set(hash, contentType);
@@ -30,7 +32,7 @@ Router.get('/:hash', async (req, res) => {
 
   res.status(HTTPStatus.OK);
 
-  // Set content-type if available
+  // Set content-type header if available
   const contentType = IpfsState.get(hash);
   if (contentType) {
     res.header('content-type', contentType);

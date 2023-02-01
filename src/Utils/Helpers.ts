@@ -2,17 +2,11 @@ import {createWriteStream} from 'node:fs';
 import fs from 'node:fs/promises';
 import fetch, {Response} from 'node-fetch';
 
-export const GetPostgresTimestamp = (date: Date = new Date()): string => {
-  /**
-   * Date.prototype.toISOString returns: 2022-01-22T13:59:11.983Z
-   * Postgres wants: 2022-01-22 13:59:11
-   *
-   * Replace T with ` ` (space)
-   * Split by . (dot) to remove ms
-   */
-  return date.toISOString().replace('T', ' ').split('.')[0];
-};
-
+/**
+ * Checks if a file exists
+ * @param filePath Path to the file
+ * @returns Boolean indicating if the file exists
+ */
 export const FileExists = async (filePath: string): Promise<boolean> => {
   try {
     await fs.access(filePath);
@@ -22,6 +16,12 @@ export const FileExists = async (filePath: string): Promise<boolean> => {
   }
 };
 
+/**
+ * Downloads a file from a URL and saves it to a path
+ * @param url URL to download from
+ * @param savePath Path to save the file to
+ * @returns Object indicating if the download was successful and the response
+ */
 export const FileDownloader = async (
   url: string,
   savePath: string,
