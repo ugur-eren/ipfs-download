@@ -2,14 +2,16 @@ import {join} from 'node:path';
 import {createReadStream} from 'node:fs';
 import express from 'express';
 import fetch from 'node-fetch';
+import fileUpload from 'express-fileupload';
+import FormData from 'form-data';
 import HTTPStatus from '../Utils/HTTPStatus';
-import {IPFS_API_URL, IPFS_FOLDER, PINATA_API_KEY, PINATA_SECRET_API_KEY} from '../Utils/Constants';
+import {IPFS_API_URL, IPFS_FOLDER, PINATA_JWT_TOKEN} from '../Utils/Constants';
 import {FileDownloader, FileExists} from '../Utils/Helpers';
 import IpfsState from '../Utils/IpfsState';
 
 const Router = express.Router();
 
-Router.post('/', async (req, res) => {
+Router.put('/json', async (req, res) => {
   const {fileName, data} = req.body;
 
   const content = JSON.stringify({
@@ -27,8 +29,7 @@ Router.post('/', async (req, res) => {
     body: content,
     headers: {
       'Content-Type': 'application/json',
-      pinata_api_key: PINATA_API_KEY,
-      pinata_secret_api_key: PINATA_SECRET_API_KEY,
+      Authorization: `Bearer ${PINATA_JWT_TOKEN}`,
     },
   });
 
@@ -36,6 +37,56 @@ Router.post('/', async (req, res) => {
 
   res.status(HTTPStatus.OK).send(responseJSON);
 });
+
+Router.put(
+  '/file',
+  fileUpload({
+    useTempFiles: false,
+  }),
+  async (req, res) => {
+    if (!req.files?.file) {
+      res.status(HTTPStatus.BadRequest).send('No file provided');
+      return;
+    }
+
+    let {file} = req.files;
+    if (Array.isArray(file)) {
+      if (file.length > 1) {
+        res.status(HTTPStatus.BadRequest).send('Multiple files provided');
+        return;
+      }
+
+      // eslint-disable-next-line prefer-destructuring
+      file = file[0];
+    }
+
+    if (!file) {
+      res.status(HTTPStatus.BadRequest).send('No file provided');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file.data, {
+      filename: file.name,
+      contentType: file.mimetype,
+    });
+    formData.append('pinataMetadata', JSON.stringify({name: file.name}));
+    formData.append('pinataOptions', JSON.stringify({cidVersion: 0}));
+
+    const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+      method: 'POST',
+      body: formData.getBuffer(),
+      headers: {
+        ...formData.getHeaders(),
+        Authorization: `Bearer ${PINATA_JWT_TOKEN}`,
+      },
+    });
+
+    const responseJSON = await response.json();
+
+    res.status(HTTPStatus.OK).send(responseJSON);
+  },
+);
 
 Router.get('/:hash', async (req, res) => {
   const {hash} = req.params;
